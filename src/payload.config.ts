@@ -14,6 +14,7 @@ import { Categories } from "./collections/Categories";
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
+//this is synchronous so can just import config, if async () => return build config then wouldve to import configPromise
 export default buildConfig({
   admin: {
     user: Users.slug,
