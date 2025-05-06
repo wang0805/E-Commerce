@@ -1,8 +1,12 @@
+"use client";
+
 import { useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 
-import { CustomCategory } from "../types";
+import { CategoriesGetManyOutput } from "@/modules/categories/types";
 import {
   Sheet,
   SheetContent,
@@ -14,20 +18,26 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  data: CustomCategory[]; // To remove later
 }
 
-export const CategoriesSidebar = ({ open, onOpenChange, data }: Props) => {
+export const CategoriesSidebar = ({ open, onOpenChange }: Props) => {
   const router = useRouter();
-  //state can be null or an array of customcategorie objects
-  const [parentCategories, setParentCategories] = useState<
-    CustomCategory[] | null
-  >(null);
-  const [selectedCategory, setSelectedCategory] =
-    useState<CustomCategory | null>(null);
 
-  // if we have parent categories, show those, otherwise show root categories
-  const currentCategories = parentCategories ?? data ?? []; // ?? means Return the first value that is NOT null or undefined
+  //changed to use tRPC instead of passing down the data props repeatedly
+  const trpc = useTRPC();
+  const { data: data_categories } = useQuery(
+    trpc.categories.getMany.queryOptions()
+  );
+
+  //state can be null or an array of customcategorie objects
+  const [parentCategories, setParentCategories] =
+    useState<CategoriesGetManyOutput | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<
+    CategoriesGetManyOutput[1] | null
+  >(null);
+
+  // if we have parent categories, show those, otherwise show root categories. currentCategories will initialized as the full data
+  const currentCategories = parentCategories ?? data_categories ?? []; // ?? means Return the first value that is NOT null or undefined
 
   const handleOpenChange = (open: boolean) => {
     //reset everything when closed
@@ -36,9 +46,9 @@ export const CategoriesSidebar = ({ open, onOpenChange, data }: Props) => {
     setParentCategories(null);
   };
 
-  const handleCategoryClick = (category: CustomCategory) => {
+  const handleCategoryClick = (category: CategoriesGetManyOutput[1]) => {
     if (category.subcategories && category.subcategories.length > 0) {
-      setParentCategories(category.subcategories as CustomCategory[]); // if category has subcategories, then it sets them as parents when clicked
+      setParentCategories(category.subcategories as CategoriesGetManyOutput); // if category has subcategories, then it sets them as parents when clicked
       setSelectedCategory(category); // save which category was clicked, for a back button
     } else {
       // this is a leaf category (no subcategories)
