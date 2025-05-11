@@ -1,8 +1,8 @@
-import { headers as getHeaders, cookies as getCookies } from "next/headers"; // rename so we have no conflicting names
+import { headers as getHeaders } from "next/headers"; // rename so we have no conflicting names
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { AUTH_COOKIE } from "./constant";
 import { registerSchema, loginSchema } from "../schema";
+import { generateAuthCookie } from "../util";
 
 export const authRouter = createTRPCRouter({
   session: baseProcedure.query(async ({ ctx }) => {
@@ -55,17 +55,23 @@ export const authRouter = createTRPCRouter({
           message: "Invalid credentials",
         });
       }
-      const cookies = await getCookies();
-      cookies.set({
-        name: AUTH_COOKIE,
+      //   const cookies = await getCookies();
+      //   //set cookies manually (via Local API in docs)
+      //   //if using RESTAPI, then cookies are automatically assigned
+      //   cookies.set({
+      //     name: `${ctx.db.config.cookiePrefix}-token`,
+      //     value: data.token,
+      //     httpOnly: true,
+      //     path: "/",
+      //     // TODO: ensure cross-domain cookie sharing
+      //     // funroad.com // initial cookie
+      //     // xxx.funroad.com // cookie does not exist here
+      //     // sameSite: "none",
+      //     // domain: "",
+      //   });
+      await generateAuthCookie({
+        prefix: ctx.db.config.cookiePrefix,
         value: data.token,
-        httpOnly: true,
-        path: "/",
-        // TODO: ensure cross-domain cookie sharing
-        // funroad.com // initial cookie
-        // xxx.funroad.com // cookie does not exist here
-        // sameSite: "none",
-        // domain: "",
       });
     }),
 
@@ -84,24 +90,11 @@ export const authRouter = createTRPCRouter({
         message: "Invalid credentials",
       });
     }
-    const cookies = await getCookies();
-    cookies.set({
-      name: AUTH_COOKIE,
+    await generateAuthCookie({
+      prefix: ctx.db.config.cookiePrefix,
       value: data.token,
-      httpOnly: true,
-      path: "/",
-      // TODO: ensure cross-domain cookie sharing
-      // funroad.com // initial cookie
-      // xxx.funroad.com // cookie does not exist here
-      // sameSite: "none",
-      // domain: "",
     });
 
     return data;
-  }),
-
-  logout: baseProcedure.mutation(async ({}) => {
-    const cookies = await getCookies();
-    cookies.delete(AUTH_COOKIE);
   }),
 });

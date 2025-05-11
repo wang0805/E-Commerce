@@ -1,18 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { ListFilterIcon, SearchIcon } from "lucide-react";
+import { BookmarkCheckIcon, ListFilterIcon, SearchIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 
 import { Input } from "@/components/ui/input";
 import { CategoriesSidebar } from "./categories-sidebar";
 import { Button } from "@/components/ui/button";
-
+import { useTRPC } from "@/trpc/client";
 interface Props {
   disabled?: boolean;
 }
 
 export const SearchInput = ({ disabled }: Props) => {
   const [isSideBarOpen, setIsSideBarOpen] = useState(false);
+
+  const trpc = useTRPC();
+  //check if theres logged in session
+  // u can also use /api/{collections[users]}/me from RESTAPI provided by payload to retreieve the user
+  const session = useQuery(trpc.auth.session.queryOptions());
+
   return (
     <div className="flex items-center gap-2 w-full">
       <CategoriesSidebar open={isSideBarOpen} onOpenChange={setIsSideBarOpen} />
@@ -31,6 +39,14 @@ export const SearchInput = ({ disabled }: Props) => {
       >
         <ListFilterIcon />
       </Button>
+      {session.data?.user && (
+        <Button asChild variant="elevated">
+          <Link href="/library">
+            <BookmarkCheckIcon />
+            Library
+          </Link>
+        </Button>
+      )}
     </div>
   );
 };
