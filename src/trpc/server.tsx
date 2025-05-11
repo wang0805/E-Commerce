@@ -14,6 +14,9 @@ export const trpc = createTRPCOptionsProxy({
   router: appRouter,
   queryClient: getQueryClient,
 });
+
+// getting the caller for server-side calls (Payload docs) but does not add to cache
+export const caller = appRouter.createCaller(createTRPCContext);
 // If your router is on a separate server, pass a client:
 // createTRPCOptionsProxy({
 //   client: createTRPCClient({

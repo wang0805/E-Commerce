@@ -5,10 +5,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Link from "next/link";
 import { Poppins } from "next/font/google";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner"; //we already added <Toaster/> in Rootlayout
 import { useRouter } from "next/navigation";
-
 import {
   Form,
   FormControl,
@@ -16,7 +15,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,18 +31,47 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["700"] });
 export const SignInView = () => {
   const router = useRouter();
 
+  // Using manual code (Local API)//
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const login = useMutation(
     trpc.auth.login.mutationOptions({
       onError: (error) => {
         toast.error(error.message);
       },
-      onSuccess: () => {
+      onSuccess: async () => {
+        // invalidate session query, make sure session is refreshed once we logged in
+        await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
         toast.success("User logged in successfully");
         router.push("/");
       },
     })
   );
+
+  // using RESTAPI from payload docs
+  // const login = useMutation({
+  //   mutationFn: async (values: z.infer<typeof loginSchema>) => {
+  //     const response = await fetch("/api/users/login", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify(values),
+  //     });
+  //     if (!response.ok) {
+  //       const error = await response.json();
+  //       throw new Error(error.message || "Failed to login");
+  //     }
+  //     return response.json();
+  //   },
+  //   onError: (error) => {
+  //     toast.error(error.message);
+  //   },
+  //   onSuccess: () => {
+  //     toast.success("User logged in successfully");
+  //     router.push("/");
+  //   },
+  // });
 
   const form = useForm<z.infer<typeof loginSchema>>({
     mode: "all", //show validation errors on every change
