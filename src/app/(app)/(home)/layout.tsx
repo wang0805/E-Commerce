@@ -3,9 +3,12 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { getQueryClient, trpc } from "@/trpc/server";
 import { Suspense } from "react";
 
-import Navbar from "./navbar";
-import Footer from "./footer";
-import { SearchFilters, SearchFiltersLoading } from "./search-filters";
+import Navbar from "@/modules/home/ui/components/navbar";
+import Footer from "@/modules/home/ui/components/footer";
+import {
+  SearchFilters,
+  SearchFiltersLoading,
+} from "@/modules/home/ui/components/search-filters";
 
 interface Props {
   children: React.ReactNode;
