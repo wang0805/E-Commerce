@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 import type { Sort, Where } from "payload";
-import { Category, Media } from "@/payload-types";
+import { Category, Media, Tenant } from "@/payload-types";
 import { sortValues } from "@/modules/products/search-params";
 import { DEFAULT_LIMIT } from "@/constants";
 
@@ -17,6 +17,7 @@ export const productsRouter = createTRPCRouter({
         maxPrice: z.string().nullable().optional(),
         tags: z.array(z.string()).nullable().optional(),
         sort: z.enum(sortValues).nullable().optional(),
+        tenantSlug: z.string().nullable().optional(),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -33,6 +34,29 @@ export const productsRouter = createTRPCRouter({
       if (input.sort === "hot_and_new") {
         sort = "-createdAt";
       }
+
+      //equals, greater_than_equal, less_than_equal are native query API provided by Payload CMS
+
+      if (input.minPrice && input.maxPrice) {
+        where.price = {
+          greater_than_equal: input.minPrice,
+          less_than_equal: input.maxPrice,
+        };
+      } else if (input.minPrice) {
+        where.price = {
+          greater_than_equal: input.minPrice,
+        };
+      } else if (input.maxPrice) {
+        where.price = {
+          less_than_equal: input.maxPrice,
+        };
+      }
+
+      if (input.tenantSlug) {
+        where["tenant.slug"] = {
+          equals: input.tenantSlug,
+        };
+      }
       if (input.category) {
         const categoriesData = await ctx.db.find({
           collection: "categories",
@@ -45,23 +69,6 @@ export const productsRouter = createTRPCRouter({
             },
           },
         });
-
-        //equals, greater_than_equal, less_than_equal are native query API provided by Payload CMS
-
-        if (input.minPrice && input.maxPrice) {
-          where.price = {
-            greater_than_equal: input.minPrice,
-            less_than_equal: input.maxPrice,
-          };
-        } else if (input.minPrice) {
-          where.price = {
-            greater_than_equal: input.minPrice,
-          };
-        } else if (input.maxPrice) {
-          where.price = {
-            less_than_equal: input.maxPrice,
-          };
-        }
 
         // console.log(
         //   // JSON.stringify(categoriesData, null, 2),
@@ -98,7 +105,7 @@ export const productsRouter = createTRPCRouter({
       }
       const data = await ctx.db.find({
         collection: "products",
-        depth: 1, //just category and image, if 0 will not have those 2
+        depth: 2, //just category, tenant and image, if 0 will not have those 2. 2 for tenant.image
         where,
         sort,
         page: input.cursor,
@@ -107,12 +114,13 @@ export const productsRouter = createTRPCRouter({
 
       // simulate fake delay
       // await new Promise((resolve) => setTimeout(resolve, 5000));
-
+      // console.log(JSON.stringify(data.docs, null, 2));
       return {
         ...data,
         docs: data.docs.map((doc) => ({
           ...doc,
           image: doc.image as Media | null,
+          tenant: doc.tenant as Tenant & { image: Media | null },
         })),
       };
     }),
