@@ -1,15 +1,15 @@
 import {
-  useQueryStates,
   parseAsString,
+  createLoader,
   parseAsArrayOf,
   parseAsStringLiteral,
-} from "nuqs";
+} from "nuqs/server";
 
-// no inputs from server so keeping this purely client side
+// no inputs from client so keeping this purely server side unlike useproductfilters hook
 
-const sortValues = ["curated", "trending", "hot_and_new"] as const;
+export const sortValues = ["curated", "trending", "hot_and_new"] as const;
 
-export const params = {
+const params = {
   sort: parseAsStringLiteral(sortValues).withDefault("curated"),
   minPrice: parseAsString
     .withOptions({
@@ -27,8 +27,5 @@ export const params = {
     })
     .withDefault([]),
 };
-
-// to call the hook from client components
-export const useProductFilters = () => {
-  return useQueryStates(params);
-};
+// to call the hook from server components
+export const loadProductFilters = createLoader(params);
