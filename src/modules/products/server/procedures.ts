@@ -1,21 +1,35 @@
 import { z } from "zod";
 
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
-import type { Where } from "payload";
+import type { Sort, Where } from "payload";
 import { Category } from "@/payload-types";
+import { sortValues } from "@/modules/products/search-params";
 
 export const productsRouter = createTRPCRouter({
   getMany: baseProcedure
     .input(
       z.object({
         category: z.string().nullable().optional(),
-        minPrice: z.number().nullable().optional(),
-        maxPrice: z.number().nullable().optional(),
+        minPrice: z.string().nullable().optional(),
+        maxPrice: z.string().nullable().optional(),
+        tags: z.array(z.string()).nullable().optional(),
+        sort: z.enum(sortValues).nullable().optional(),
       })
     )
     .query(async ({ ctx, input }) => {
       const where: Where = {};
+      let sort: Sort = "-createdAt";
+      if (input.sort === "curated") {
+        sort = "-createdAt";
+      }
 
+      if (input.sort === "trending") {
+        sort = "-createdAt";
+      }
+
+      if (input.sort === "hot_and_new") {
+        sort = "-createdAt";
+      }
       if (input.category) {
         const categoriesData = await ctx.db.find({
           collection: "categories",
@@ -28,6 +42,8 @@ export const productsRouter = createTRPCRouter({
             },
           },
         });
+
+        //equals, greater_than_equal, less_than_equal are native query API provided by Payload CMS
 
         if (input.minPrice && input.maxPrice) {
           where.price = {
@@ -71,10 +87,17 @@ export const productsRouter = createTRPCRouter({
           };
         }
       }
+
+      if (input.tags && input.tags.length > 0) {
+        where["tags.name"] = {
+          in: input.tags,
+        };
+      }
       const data = await ctx.db.find({
         collection: "products",
         depth: 1, //just category and image, if 0 will not have those 2
         where,
+        sort,
       });
 
       // simulate fake delay
