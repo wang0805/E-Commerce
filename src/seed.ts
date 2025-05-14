@@ -194,6 +194,32 @@ async function retry<T>(fn: () => Promise<T>, retries = 5): Promise<T> {
 const seed = async () => {
   const payload = await getPayload({ config });
 
+  //create admin tenant
+  const adminTenant = await payload.create({
+    collection: "tenants",
+    data: {
+      name: "admin",
+      slug: "admin",
+      stripeAccountId: "admin",
+    },
+  });
+
+  //create superadmin user and add in admin tenant
+  await payload.create({
+    collection: "users",
+    data: {
+      email: "superadmin@demo.com",
+      password: "123",
+      username: "superadmin",
+      tenants: [
+        {
+          tenant: adminTenant.id,
+        },
+      ],
+      roles: ["super-admin"],
+    },
+  });
+
   for (const category of categories) {
     const parent = await retry(() =>
       payload.create({
