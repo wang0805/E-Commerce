@@ -8,7 +8,7 @@ export const tagsRouter = createTRPCRouter({
       z.object({
         // In this case, the cursor would hold the value of a unique identifier (like the id of the last item on the previous page) or a timestamp. The server would then query for items that come after this cursor value based on a specific sorting order.
 
-        //pagination to show how many tags we want to show on filter dropdowwn
+        //pagination to show how many tags we want to show on filter dropdown
         cursor: z.number().default(1),
         limit: z.number().default(DEFAULT_LIMIT),
       })

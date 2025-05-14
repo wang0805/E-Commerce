@@ -2,13 +2,16 @@ import { z } from "zod";
 
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 import type { Sort, Where } from "payload";
-import { Category } from "@/payload-types";
+import { Category, Media } from "@/payload-types";
 import { sortValues } from "@/modules/products/search-params";
+import { DEFAULT_LIMIT } from "@/constants";
 
 export const productsRouter = createTRPCRouter({
   getMany: baseProcedure
     .input(
       z.object({
+        cursor: z.number().default(1), //pagination to show how many products we want to show on filter dropdown
+        limit: z.number().default(DEFAULT_LIMIT), //pagination to limit how many products we want to show on filter dropdown
         category: z.string().nullable().optional(),
         minPrice: z.string().nullable().optional(),
         maxPrice: z.string().nullable().optional(),
@@ -98,12 +101,20 @@ export const productsRouter = createTRPCRouter({
         depth: 1, //just category and image, if 0 will not have those 2
         where,
         sort,
+        page: input.cursor,
+        limit: input.limit,
       });
 
       // simulate fake delay
       // await new Promise((resolve) => setTimeout(resolve, 5000));
 
-      return data;
+      return {
+        ...data,
+        docs: data.docs.map((doc) => ({
+          ...doc,
+          image: doc.image as Media | null,
+        })),
+      };
     }),
 });
 
